@@ -32,11 +32,13 @@ except:
     pass
 
 # 构造 Request headers
-agent = 'Mozilla/5.0 (Windows NT 5.1; rv:33.0) Gecko/20100101 Firefox/33.0'
+agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36"
 headers = {
     "Host": "www.shanxinhui.com",
     "Referer": "https://www.shanxinhui.com/",
-    'User-Agent': agent
+    "User-Agent": agent,
+    "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+
 }
 
 # 使用登录cookie信息
@@ -83,33 +85,40 @@ def get_captcha():
 
 def isLogin():
     # 通过查看用户个人信息来判断是否已经登录
-    # url = "http://www.shanxinhui.com/User/Manager/ListUserOutGo"
-    # login_page = session.get(url, headers=headers, allow_redirects=False)
-    # print()
-
+    url = "http://www.shanxinhui.com/User/Manager/ListUserOutGo"
+    login_page = session.get(url, headers=headers, allow_redirects=False)
+    print(login_page.text)
+    print('-------------------------------2222')
     wb = openpyxl.load_workbook(filename='sxh.xlsx')
-    ws=wb.create_sheet(title='hahah')
+    ws=wb.create_sheet(title='go1go')
 
-    soup = BeautifulSoup(open('index.html',encoding="utf-8").read(),"html.parser")
-    print('---')
-    print(soup.find("title"))
-    rows = soup.find("table").find("tbody").find_all("tr")
-    # print(rows)
+    html = open('index.html', encoding="utf-8").read()
+    okok = html.replace('</td>\n</td>','</td>')
+    print('-------------------------------A')
+
+    # print(okok)
+    soup = BeautifulSoup(okok, "html.parser")
+    # soup = BeautifulSoup(login_page.text, "html.parser")
+    # print(soup.find("table"))
+    rows = soup.find("table").find_all("tr")
+    print('-------------------------------A')
+    print(rows)
     dict =  {'123456': [1,2]}
     array = [dict]
 
-    print(rows[0])
+    # print(rows[0])
+    rows.pop()
     for idx, row in enumerate(rows):
         cells = row.find_all("td")
         print(cells[3])
-        # for idxx, val in enumerate(cells):
+        for idxx, val in enumerate(cells):
 
             # if val.get_text() == '善种子':
             #     print("这是一个山种子")
             # print(val.get_text())
-            # ws.cell(row=idx + 1, column=idxx + 1).value = val.get_text()
+            ws.cell(row=idx + 1, column=idxx + 1).value = val.get_text()
 
-    # wb.save(filename='sxh2.xlsx')
+    wb.save(filename='sxh.xlsx')
 
 
 
@@ -117,10 +126,10 @@ def isLogin():
         # print(rn)
 
     print('---')
-    if login_page.status_code == 200:
-        return True
-    else:
-        return False
+    # if login_page.status_code == 200:
+    #     return True
+    # else:
+    #     return False
 
 
 def login(secret, account):

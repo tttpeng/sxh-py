@@ -40,7 +40,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="/Users/tpeng/Desktop/SXH-py/ENV"
+VIRTUAL_ENV="/Users/pengtao/Desktop/sxh-py/ENV"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"
