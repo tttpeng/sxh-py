@@ -20,6 +20,7 @@ from time import time
 import datetime
 import re
 
+import pytesseract
 
 try:
     import cookielib
@@ -81,14 +82,14 @@ def get_captcha():
         f.close()
     # 用pillow 的 Image 显示验证码
     # 如果没有安装 pillow 到源代码所在的目录去找到验证码然后手动输入
-    try:
-        im = Image.open('captcha.jpg')
-        im.show()
-        im.close()
-    except:
-        print(u'请到 %s 目录找到captcha.jpg 手动输入' % os.path.abspath('captcha.jpg'))
-    captcha = input("please input the captcha\n>")
-    return captcha
+#    try:
+#        im = Image.open('captcha.jpg')
+#        im.show()
+#        im.close()
+#    except:
+#        print(u'请到 %s 目录找到captcha.jpg 手动输入' % os.path.abspath('captcha.jpg'))
+#    captcha = input("please input the captcha\n>")
+#    return captcha
 
 
 def isLogin():
@@ -341,6 +342,27 @@ def login(secret, account):
     session.cookies.save(ignore_discard=True)
 
 
+def shibieyanzhengmg():
+    from PIL import Image
+    im = Image.open('captcha.jpg')
+    imgry = im.convert('L')
+#    imgry.show()
+    threshold = 140
+    table = []
+    for i in range(256):
+        if i < threshold:
+            table.append(0)
+        else:
+            table.append(1)
+    out = imgry.point(table, '1')
+#    out.show()
+    
+    image = Image.open('captcha.jpg')
+    17
+    vcode = pytesseract.image_to_string(out,config='-c tessedit_char_whitelist=0123456789')
+    print(vcode)
+
+
 
 
 def writeExcel():
@@ -356,16 +378,16 @@ except:
     pass
 
 if __name__ == '__main__':
+    get_captcha()
 
-
-    
+    shibieyanzhengmg()
     
     print('哈哈')
 #    print(getTimeOClockOfToday(2016,11,10))    
     # writeExcel()
 #    login('ss9988', 'csy9988')
-    isLogin()
-    getOrdersArrayResult(2016,11,11)
+#    isLogin()
+#    getOrdersArrayResult(2016,11,11)
 #        print('您已经登录')
         # else:
         #     account = input('请输入你的用户名\n>  ')
