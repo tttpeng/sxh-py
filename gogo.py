@@ -16,8 +16,9 @@ Update
 import requests
 import openpyxl
 from bs4 import BeautifulSoup
-from datetime import datetime
 from time import time
+import datetime
+import re
 
 
 try:
@@ -45,6 +46,10 @@ headers = {
 
 }
 
+
+
+allOrders = []
+
 # 使用登录cookie信息
 session = requests.session()
 session.cookies = cookielib.LWPCookieJar('weibo_cookies.txt')
@@ -54,6 +59,8 @@ try:
     print(session.cookies)
 except:
     print("Cookie 未能加载")
+    
+       
 
 
 
@@ -102,38 +109,82 @@ def isLogin():
 
     text = '2016-11-09 10:09:25'
     t_obj = time.strptime(text, "%Y-%m-%d %H:%M:%S")
+    ts = time.mktime(t_obj)
+
     print(t_obj)
     # y = datetime.strptime(text, '%Y-%m-%d ')
     # z = datetime.now()
     # time_tuple = t_obj.timetuple()
-    ts = time.mktime(t_obj)
     print(ts)
 
-    print(getTimeOClockOfToday())
-    print(ts > getTimeOClockOfToday())
     # html = open('index.html', encoding="utf-8").read()
     # exculeExcel(html=login_page.text)
 
 
-def getTimeOClockOfToday():
-    import time
+def getOrdersArrayResult(year,month,day):
+    
+    a= "%d-%d-%d 00:00:00" % (year,month,day)
+    startTime = time.mktime(time.strptime(a,'%Y-%m-%d %H:%M:%S'))
+    endTime = startTime + 60 * 60 * 24 - 1
 
-    t = time.localtime(time.time())
+    i = 1
+    
+    
+    url = 'http://www.shanxinhui.com/user/manager/listuseroutgo/p/1.html'
+    request_result = session.get(url,headers=headers, allow_redirects=False)
 
-    time1 = time.mktime(time.strptime(time.strftime('%Y-%m-%d 00:00:00', t), '%Y-%m-%d %H:%M:%S'))
-
-    return int(time1)
-
-
-def exculeExcel(html):
-    wb = openpyxl.load_workbook(filename='sxh.xlsx')
-    ws = wb.create_sheet(title='zhenshide')
-
-    okok = html.replace('</td>\n</td>', '</td>')
-    # print(okok)
-    soup = BeautifulSoup(okok, "html.parser")
+    html = request_result.text;
+    prefectHtml = html.replace('</td>\n</td>', '</td>')
+    soup = BeautifulSoup(prefectHtml, "html.parser")
     # soup = BeautifulSoup(login_page.text, "html.parser")
     # print(soup.find("table"))
+    
+    rowsNumber = soup.find("span", class_="rows")
+    
+    print('----')    
+    print(rowsNumber.string)
+    print('----')
+    non_decimal = re.compile(r'[^\d.]+')
+    number = non_decimal.sub('', rowsNumber.string)
+    
+    pageNumber = int(int(number)/18) + 1
+    print(int(pageNumber) + 1)
+    n = 1
+    while n <  pageNumber + 1:
+        getHTML(n)
+        n += 1
+    global allOrders        
+    
+    gggArray = []
+    for dict in allOrders:
+        if dict[3] > startTime and dict[3] < endTime:
+            gggArray.append(dict)
+            print(dict[3])
+    
+    newArray = []
+    for array in gggArray:
+        order, newArray = orderById(array[0], newArray)
+        order.number1 = str(int(array[1]) + int(order.number1))
+        order.number2 = str(int(array[2]) + int(order.number2))
+    exculeExcel(newArray)
+#    print(gggArray)
+        
+    
+
+
+def getHTML(page):
+    url = 'http://www.shanxinhui.com/user/manager/listuseroutgo/p/%d.html' % page;
+    request_result = session.get(url,headers=headers, allow_redirects=False)
+    
+    print('html result -------')
+    print(request_result.text)
+    print('html result -------end')
+    
+    
+    html = request_result.text;
+    prefectHtml = html.replace('</td>\n</td>', '</td>')
+    soup = BeautifulSoup(prefectHtml, "html.parser")
+    
     rows = soup.find("table").find_all("tr")
     dict = {'id': [1, 2]}
     array = [dict]
@@ -144,12 +195,16 @@ def exculeExcel(html):
     result.pop()
     result.pop(0)
     newReuslt = [];
+    
     for tempArray in result:
-        # print()
+        print(tempArray[5])
         newReuslt.append([])
         typeString = tempArray[1]
+        timeString = tempArray[5]
+        t_obj = time.strptime(timeString, "%Y-%m-%d %H:%M:%S")
+        ts = time.mktime(t_obj)
         numberString = tempArray[2]
-        accountString = tempArray[3]
+        accountString = tempArray[3]        
         newReuslt[-1].insert(0, accountString)
         if typeString == '善种子':
             newReuslt[-1].insert(1, numberString)
@@ -159,16 +214,28 @@ def exculeExcel(html):
             newReuslt[-1].insert(2, numberString)
         else:
             newReuslt[-1].insert(2, '0')
+        newReuslt[-1].insert(3,ts)
+    print(newReuslt)
+    global allOrders
+    allOrders = allOrders + newReuslt
 
-    newArray = []
-    for array in newReuslt:
-        order, newArray = orderById(array[0], newArray)
-        order.number1 = str(int(array[1]) + int(order.number1))
-        order.number2 = str(int(array[2]) + int(order.number2))
 
-    # ws.merge_cells('A1:B1:C1:D1:E1:F1:G1')
-    # ws.merge_cells('A2:B2:C2:D2:E2:F2:G2')
-    #
+
+
+
+def getTimeOClockOfToday(year,month,day):
+    import time
+
+    t = time.localtime(time.time())
+    time1 = time.mktime(time.strptime(time.strftime('%Y-%m-%d 00:00:00', t), '%Y-%m-%d %H:%M:%S'))
+
+
+    return int(time1)
+
+
+def exculeExcel(newArray):
+    wb = openpyxl.load_workbook(filename='sxh.xlsx')
+    ws = wb.create_sheet(title='zhenshide')
     ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=7)
     ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=7)
 
@@ -289,11 +356,17 @@ except:
     pass
 
 if __name__ == '__main__':
+
+
+    
+    
     print('哈哈')
+#    print(getTimeOClockOfToday(2016,11,10))    
     # writeExcel()
-    # login('ss9988', 'csy9988')
-    if isLogin():
-        print('您已经登录')
+#    login('ss9988', 'csy9988')
+    isLogin()
+    getOrdersArrayResult(2016,11,11)
+#        print('您已经登录')
         # else:
         #     account = input('请输入你的用户名\n>  ')
         #     secret = input("请输入你的密码\n>  ")
